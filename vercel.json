@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": ".",
+  "regions": ["sin1"],
+  "trailingSlash": false,
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.9.0",
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/(config|includes|helpers|vendor|document|api)(/.*)?$", "status": 404 },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php",
+      "transforms": [
+        {
+          "type": "request.query",
+          "op": "append",
+          "target": { "key": "__p" },
+          "args": "$1"
+        }
+      ]
+    }
+  ]
+}

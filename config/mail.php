@@ -2,9 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/../vendor/autoload.php';
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
+require_once __DIR__ . '/env.php';
 
 function getActiveEmail(PDO $db) {
     $stmt = $db->query("SELECT * FROM email_settings ORDER BY updated_at DESC LIMIT 1");

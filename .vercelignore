@@ -1,0 +1,14 @@
+.agents
+document
+node_modules
+vendor
+package.json
+package-lock.json
+skills-lock.json
+.prettierrc
+.env
+.env.local
+.env.*
+.git
+.gitignore
+.vercel
