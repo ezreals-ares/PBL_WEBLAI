@@ -16,8 +16,8 @@ if (isset($_GET['delete'])) {
         $stmt->execute([$uuid]);
         $product = $stmt->fetch();
 
-        if ($product && $product['path_gambar'] && file_exists('../assets/img/' . $product['path_gambar'])) {
-            unlink('../assets/img/' . $product['path_gambar']);
+        if ($product && $product['path_gambar']) {
+            delete_image($product['path_gambar']);
         }
 
         // Delete akan cascade ke anggota_produk
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
             if ($upload_result['success']) {
                 $path_gambar = $upload_result['filename'];
             } else {
-                throw new Exception($upload_result['error']);
+                throw new Exception($upload_result['message']);
             }
         }
 
@@ -83,8 +83,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
                 $stmt = $pdo->prepare("SELECT path_gambar FROM produk WHERE uuid = ?");
                 $stmt->execute([$uuid]);
                 $old = $stmt->fetch();
-                if ($old && $old['path_gambar'] && file_exists('../assets/img/' . $old['path_gambar'])) {
-                    unlink('../assets/img/' . $old['path_gambar']);
+                if ($old && $old['path_gambar']) {
+                    delete_image($old['path_gambar']);
                 }
             }
 

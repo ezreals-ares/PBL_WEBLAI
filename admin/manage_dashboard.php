@@ -8,11 +8,6 @@ $success = '';
 $error = '';
 $upload_dir = '../assets/img/dashboard/';
 
-// Create directory if not exists
-if (!file_exists($upload_dir)) {
-    mkdir($upload_dir, 0777, true);
-}
-
 // Handle Delete
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
@@ -27,8 +22,8 @@ if (isset($_GET['delete'])) {
         $stmt->execute([$id]);
 
         // Delete file
-        if ($foto && $foto['path_gambar'] && file_exists($upload_dir . $foto['path_gambar'])) {
-            unlink($upload_dir . $foto['path_gambar']);
+        if ($foto && $foto['path_gambar']) {
+            delete_image($foto['path_gambar'], 'dashboard');
         }
 
         $_SESSION['flash_success'] = 'Foto dashboard berhasil dihapus!';
@@ -44,34 +39,23 @@ if (isset($_GET['delete'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['gambar'])) {
     $file = $_FILES['gambar'];
 
-    // Validate file
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 5 * 1024 * 1024; // 5MB
-
     if ($file['error'] === 0) {
-        if (in_array($file['type'], $allowed_types)) {
-            if ($file['size'] <= $max_size) {
-                $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $new_filename = 'dashboard_' . uniqid() . '.' . $file_ext;
-                $upload_path = $upload_dir . $new_filename;
+        $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $file['name'] = 'dashboard_' . uniqid() . '.' . $file_ext;
 
-                if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-                    try {
-                        $stmt = $pdo->prepare("INSERT INTO dashboard_foto (path_gambar) VALUES (?)");
-                        $stmt->execute([$new_filename]);
-                        $_SESSION['flash_success'] = 'Gambar berhasil diupload!';
-                    } catch (PDOException $e) {
-                        unlink($upload_path);
-                        $_SESSION['flash_error'] = 'Gagal menyimpan data ke database: ' . $e->getMessage();
-                    }
-                } else {
-                    $_SESSION['flash_error'] = 'Gagal mengupload file!';
-                }
-            } else {
-                $_SESSION['flash_error'] = 'Ukuran file melebihi batas maksimal 5MB!';
+        $upload_result = upload_file($file, 'dashboard', 5 * 1024 * 1024);
+
+        if ($upload_result['success']) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO dashboard_foto (path_gambar) VALUES (?)");
+                $stmt->execute([$upload_result['filename']]);
+                $_SESSION['flash_success'] = 'Gambar berhasil diupload!';
+            } catch (PDOException $e) {
+                delete_image($upload_result['filename'], 'dashboard');
+                $_SESSION['flash_error'] = 'Gagal menyimpan data ke database: ' . $e->getMessage();
             }
         } else {
-            $_SESSION['flash_error'] = 'Format file tidak diizinkan! Hanya JPG, PNG, GIF, WEBP yang diperbolehkan.';
+            $_SESSION['flash_error'] = 'Gagal mengupload file: ' . $upload_result['message'];
         }
     } else {
         $_SESSION['flash_error'] = 'Terjadi kesalahan saat mengupload file!';

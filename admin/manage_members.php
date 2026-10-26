@@ -16,8 +16,8 @@ if (isset($_GET['delete'])) {
         $stmt->execute([$uuid]);
         $member = $stmt->fetch();
 
-        if ($member && $member['path_gambar'] && file_exists('../assets/img/' . $member['path_gambar'])) {
-            unlink('../assets/img/' . $member['path_gambar']);
+        if ($member && $member['path_gambar']) {
+            delete_image($member['path_gambar']);
         }
 
         $stmt = $pdo->prepare("DELETE FROM anggota WHERE uuid = ?");
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
             if ($upload_result['success']) {
                 $path_gambar = $upload_result['filename'];
             } else {
-                $_SESSION['flash_error'] = "Gagal mengupload gambar: " . $upload_result['error'];
+                $_SESSION['flash_error'] = "Gagal mengupload gambar: " . $upload_result['message'];
             }
         }
         // Only proceed if no upload error
@@ -84,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
                     $stmt = $pdo->prepare("SELECT path_gambar FROM anggota WHERE uuid = ?");
                     $stmt->execute([$uuid]);
                     $old = $stmt->fetch();
-                    if ($old && $old['path_gambar'] && file_exists('../assets/img/' . $old['path_gambar'])) {
-                        unlink('../assets/img/' . $old['path_gambar']);
+                    if ($old && $old['path_gambar']) {
+                        delete_image($old['path_gambar']);
                     }
                 }
 

@@ -17,8 +17,8 @@ if (isset($_GET['delete'])) {
         $partner = $stmt->fetch();
 
         // Delete logo file if exists
-        if ($partner && $partner['logo'] && file_exists('../assets/img/' . $partner['logo'])) {
-            unlink('../assets/img/' . $partner['logo']);
+        if ($partner && $partner['logo']) {
+            delete_image($partner['logo']);
         }
 
         $stmt = $pdo->prepare("DELETE FROM partnership WHERE uuid = ?");
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
             if ($upload_result['success']) {
                 $logo = $upload_result['filename'];
             } else {
-                $_SESSION['flash_error'] = "Gagal mengupload logo: " . $upload_result['error'];
+                $_SESSION['flash_error'] = "Gagal mengupload logo: " . $upload_result['message'];
             }
         }
 
@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
                     $stmt->execute([$uuid]);
                     $old = $stmt->fetch();
                     // Hapus file logo lama
-                    if ($old && $old['logo'] && file_exists('../assets/img/' . $old['logo'])) {
-                        unlink('../assets/img/' . $old['logo']);
+                    if ($old && $old['logo']) {
+                        delete_image($old['logo']);
                     }
                 }
 

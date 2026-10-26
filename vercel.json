@@ -10,6 +10,12 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    {
+      "source": "/assets/img/:path*",
+      "destination": "https://iuncxpceetiuagqbrcvf.supabase.co/storage/v1/object/public/media/img/:path*"
+    }
+  ],
   "routes": [
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
     { "src": "/(config|includes|helpers|vendor|document|api)(/.*)?$", "status": 404 },

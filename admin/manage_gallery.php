@@ -17,8 +17,8 @@ if (isset($_GET['delete_gallery'])) {
         $photos = $stmt->fetchAll();
 
         foreach ($photos as $photo) {
-            if ($photo['path_gambar'] && file_exists('../assets/img/' . $photo['path_gambar'])) {
-                unlink('../assets/img/' . $photo['path_gambar']);
+            if ($photo['path_gambar']) {
+                delete_image($photo['path_gambar']);
             }
         }
 
@@ -42,8 +42,8 @@ if (isset($_GET['delete_photo'])) {
         $stmt->execute([$uuid]);
         $photo = $stmt->fetch();
 
-        if ($photo && $photo['path_gambar'] && file_exists('../assets/img/' . $photo['path_gambar'])) {
-            unlink('../assets/img/' . $photo['path_gambar']);
+        if ($photo && $photo['path_gambar']) {
+            delete_image($photo['path_gambar']);
         }
 
         $stmt = $pdo->prepare("DELETE FROM foto WHERE uuid = ?");
@@ -136,9 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                             $upload_count++;
                         } catch (PDOException $e) {
                             // Jika gagal simpan ke database, hapus file yang sudah diupload
-                            if (file_exists('../assets/img/' . $upload_result['filename'])) {
-                                unlink('../assets/img/' . $upload_result['filename']);
-                            }
+                            delete_image($upload_result['filename']);
                             $_SESSION['flash_error'] = "Gagal menyimpan foto ke database: " . $e->getMessage();
                         }
                     }

@@ -17,9 +17,8 @@ if (isset($_GET['delete_foto'])) {
         $foto = $stmt->fetch();
 
         // Hapus file fisik
-        $upload_dir = rtrim($_ENV['UPLOAD_DIR'], '/') . '/berita/';
-        if ($foto && file_exists($upload_dir . $foto['file_path'])) {
-            unlink($upload_dir . $foto['file_path']);
+        if ($foto && $foto['file_path']) {
+            delete_image($foto['file_path'], 'berita');
         }
 
         // Hapus dari database
@@ -38,17 +37,13 @@ if (isset($_GET['delete_foto'])) {
 if (isset($_GET['delete'])) {
     $uuid = $_GET['delete'];
     try {
-        $upload_dir = rtrim($_ENV['UPLOAD_DIR'], '/') . '/berita/';
-
         // Hapus foto-foto terkait
         $stmt = $pdo->prepare("SELECT file_path FROM berita_foto WHERE berita_id = ?");
         $stmt->execute([$uuid]);
         $fotos = $stmt->fetchAll();
 
         foreach ($fotos as $foto) {
-            if (file_exists($upload_dir . $foto['file_path'])) {
-                unlink($upload_dir . $foto['file_path']);
-            }
+            delete_image($foto['file_path'], 'berita');
         }
 
         $stmt = $pdo->prepare("DELETE FROM berita WHERE uuid = ?");
@@ -66,8 +61,6 @@ if (isset($_GET['delete'])) {
 if (($_POST['action'] ?? '') === 'bulk_delete' && !empty($_POST['selected'])) {
     $uuids = $_POST['selected'];
     try {
-        $upload_dir = rtrim($_ENV['UPLOAD_DIR'], '/') . '/berita/';
-
         // Hapus foto-foto terkait
         foreach ($uuids as $uuid) {
             $stmt = $pdo->prepare("SELECT file_path FROM berita_foto WHERE berita_id = ?");
@@ -75,9 +68,7 @@ if (($_POST['action'] ?? '') === 'bulk_delete' && !empty($_POST['selected'])) {
             $fotos = $stmt->fetchAll();
 
             foreach ($fotos as $foto) {
-                if (file_exists($upload_dir . $foto['file_path'])) {
-                    unlink($upload_dir . $foto['file_path']);
-                }
+                delete_image($foto['file_path'], 'berita');
             }
         }
 
@@ -123,11 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
 
         // Handle upload foto
         if (!empty($_FILES['foto']['name'][0])) {
-            $upload_dir = rtrim($_ENV['UPLOAD_DIR'], '/') . '/berita/';
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0777, true);
-            }
-
             $max_file_size = (int)$_ENV['MAX_FILE_SIZE'];
             $total_files = count($_FILES['foto']['name']);
 
@@ -139,30 +125,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && ($_POST['action'] ?? '') === 'save')
 
             for ($i = 0; $i < $total_files; $i++) {
                 if ($_FILES['foto']['error'][$i] == 0) {
-                    $file_name = $_FILES['foto']['name'][$i];
-                    $file_tmp = $_FILES['foto']['tmp_name'][$i];
-                    $file_size = $_FILES['foto']['size'][$i];
-                    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+                    $file = [
+                        'name' => $_FILES['foto']['name'][$i],
+                        'type' => $_FILES['foto']['type'][$i],
+                        'tmp_name' => $_FILES['foto']['tmp_name'][$i],
+                        'error' => $_FILES['foto']['error'][$i],
+                        'size' => $_FILES['foto']['size'][$i],
+                    ];
 
-                    // Validasi ukuran file
-                    if ($file_size > $max_file_size) {
-                        $_SESSION['flash_error'] = 'Ukuran file ' . $file_name . ' melebihi batas maksimal (' . ($max_file_size / 1048576) . 'MB)';
-                        continue;
-                    }
+                    $upload_result = upload_file($file, 'berita', $max_file_size);
 
-                    $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-                    if (in_array($file_ext, $allowed_ext)) {
-                        $new_file_name = uniqid() . '_' . time() . '.' . $file_ext;
-                        $destination = $upload_dir . $new_file_name;
-
-                        if (move_uploaded_file($file_tmp, $destination)) {
-                            // Ambil caption sesuai index, jika tidak ada gunakan string kosong
-                            $caption = isset($captions[$i]) ? clean_input($captions[$i]) : '';
-                            $stmt = $pdo->prepare(
-                                "INSERT INTO berita_foto (berita_id, file_path, caption) VALUES (?, ?, ?)"
-                            );
-                            $stmt->execute([$berita_id, $new_file_name, $caption]);
-                        }
+                    if ($upload_result['success']) {
+                        // Ambil caption sesuai index, jika tidak ada gunakan string kosong
+                        $caption = isset($captions[$i]) ? clean_input($captions[$i]) : '';
+                        $stmt = $pdo->prepare(
+                            "INSERT INTO berita_foto (berita_id, file_path, caption) VALUES (?, ?, ?)"
+                        );
+                        $stmt->execute([$berita_id, $upload_result['filename'], $caption]);
+                    } else {
+                        $_SESSION['flash_error'] = 'Gagal mengupload ' . $file['name'] . ': ' . $upload_result['message'];
                     }
                 }
             }
